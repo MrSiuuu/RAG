@@ -1,10 +1,12 @@
 export type Source = {
-  chunk_id: number;
+  chunk_id?: number | null;
   document: string;
   section: string;
   page: number | string | null;
   extrait: string;
   url?: string | null;
+  /** absent/interne → bleu ; "web" → orange */
+  type?: "interne" | "web";
 };
 
 export type Message = {

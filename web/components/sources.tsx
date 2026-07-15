@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, ChevronDown } from "lucide-react";
+import { FileText, Globe, ChevronDown } from "lucide-react";
 import type { Source } from "@/lib/types";
 
 export function Sources({ sources }: { sources: Source[] }) {
@@ -9,7 +9,7 @@ export function Sources({ sources }: { sources: Source[] }) {
   return (
     <div className="mt-4 flex flex-wrap gap-2">
       {sources.map((s, i) => (
-        <SourceCard key={s.chunk_id ?? i} source={s} index={i + 1} />
+        <SourceCard key={`${s.type ?? "interne"}-${s.chunk_id ?? i}`} source={s} index={i + 1} />
       ))}
     </div>
   );
@@ -17,13 +17,33 @@ export function Sources({ sources }: { sources: Source[] }) {
 
 function SourceCard({ source, index }: { source: Source; index: number }) {
   const [open, setOpen] = useState(false);
+  const isWeb = source.type === "web";
+
   const label = [
     source.document,
-    source.section,
-    source.page != null && source.page !== "" ? `p.${source.page}` : null,
+    !isWeb ? source.section : null,
+    !isWeb && source.page != null && source.page !== "" ? `p.${source.page}` : null,
   ]
     .filter(Boolean)
     .join(" · ");
+
+  if (isWeb && source.url) {
+    return (
+      <a
+        href={source.url}
+        target="_blank"
+        rel="noreferrer"
+        className="flex max-w-full items-center gap-1.5 rounded-md border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs text-[var(--ink)] shadow-[0_1px_0_rgba(196,92,38,0.08)] transition-colors hover:bg-orange-100"
+      >
+        <Globe className="h-3.5 w-3.5 shrink-0 text-orange-600" />
+        <span className="font-semibold tabular-nums text-orange-700">{index}.</span>
+        <span className="truncate text-[var(--ink)]/80">{label || source.url}</span>
+        <span className="shrink-0 text-orange-500" aria-hidden>
+          ↗
+        </span>
+      </a>
+    );
+  }
 
   return (
     <div className="max-w-full rounded-md border border-[var(--line)] bg-[var(--surface)] text-xs shadow-[0_1px_0_rgba(11,45,42,0.04)]">

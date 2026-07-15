@@ -47,6 +47,10 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 480
 
+    # ─── Recherche web (CDC 10) ───────────────────────────────
+    # Vide = toggle sans effet (dégradation douce). Jamais de recherche auto.
+    tavily_api_key: str = ""
+
     # ─── Divers ──────────────────────────────────────────────
     app_env: str = "dev"
 

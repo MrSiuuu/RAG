@@ -1,4 +1,4 @@
-"""POST /api/chat — génération en streaming SSE (+ branche .docx)."""
+"""POST /api/chat — génération en streaming SSE (+ .docx + web optionnel)."""
 
 from __future__ import annotations
 
@@ -23,6 +23,7 @@ from app.llm.contexte import assembler_contexte
 from app.llm.generate import generer_streaming
 from app.llm.prompts import MESSAGE_AUCUN_ACCES
 from app.retrieval.pipeline import rechercher
+from app.tools.web import format_web_context, web_search
 
 router = APIRouter()
 
@@ -34,10 +35,27 @@ _SUJET_SENSIBLE = re.compile(
     re.IGNORECASE,
 )
 
+_NOTE_WEB = (
+    "\n\n(Note : des résultats [WEB] figurent dans le contexte. "
+    "Signale clairement quand une information provient du web.)"
+)
+
+# Préfixe injecté dans le contexte quand le toggle web est actif —
+# empêche le refus alors que l'info est dans un bloc [WEB].
+_CONTEXTE_WEB_PRIORITY = (
+    "INSTRUCTION PRIORITAIRE : l'utilisateur a activé la recherche web. "
+    "Les blocs [WEB] ci-dessous sont des sources AUTORISÉES. "
+    "Si l'information y figure, tu réponds en la citant "
+    "(ex. [WEB · titre de la page]) et tu n'utilises PAS le message de refus. "
+    "Indique clairement ce qui vient du web.\n\n"
+)
+
 
 class RequeteChat(BaseModel):
     question: str = Field(..., min_length=1)
     user_groups: list[str] = ["grp-tous"]
+    # FALSE par défaut — le LLM ne décide JAMAIS d'aller sur le web.
+    web: bool = False
 
 
 def _contenu_couvre_la_demande(question: str, chunks_enfants: list[dict]) -> bool:
@@ -48,7 +66,10 @@ def _contenu_couvre_la_demande(question: str, chunks_enfants: list[dict]) -> boo
     for c in chunks_enfants:
         texte = f"{c.get('breadcrumb', '')} {c.get('contenu', '')}".lower()
         if "remuneration" in texte or "rémunération" in texte or "grille" in texte:
-            if any(x in texte for x in ("54 000", "54000", "cadre confirm", "coefficient", "niveau 6")):
+            if any(
+                x in texte
+                for x in ("54 000", "54000", "cadre confirm", "coefficient", "niveau 6")
+            ):
                 return True
             if "grille de remuneration" in texte or "grille de rémunération" in texte:
                 return True
@@ -73,8 +94,21 @@ def _slugify(texte: str) -> str:
     return texte[:60] or "document"
 
 
+def _refus(debut: float) -> Iterator[str]:
+    yield sse("sources", [])
+    yield sse("token", {"texte": MESSAGE_AUCUN_ACCES})
+    yield sse(
+        "done",
+        {
+            "latence_ms": int((time.perf_counter() - debut) * 1000),
+            "a_repondu": False,
+            "nb_sources": 0,
+        },
+    )
+
+
 def flux_evenements(requete: RequeteChat) -> Iterator[str]:
-    """Pipeline chat : retrieval → (docx | réponse streamée) → done."""
+    """Pipeline chat : retrieval → (web?) → (docx | réponse streamée) → done."""
     debut = time.perf_counter()
 
     yield sse("status", {"label": "Recherche dans les documents RH…"})
@@ -87,55 +121,72 @@ def flux_evenements(requete: RequeteChat) -> Iterator[str]:
             settings=settings,
         )
 
-    # 0 chunk = ACL ou hors corpus → jamais de fichier, jamais d'invention
-    if not resultat.chunks_enfants:
-        yield sse("sources", [])
-        yield sse("token", {"texte": MESSAGE_AUCUN_ACCES})
-        yield sse(
-            "done",
-            {
-                "latence_ms": int((time.perf_counter() - debut) * 1000),
-                "a_repondu": False,
-                "nb_sources": 0,
-            },
-        )
-        return
-
-    yield sse(
-        "status",
-        {
-            "label": (
-                f"Sélection des {len(resultat.chunks_enfants)} "
-                f"passages les plus pertinents…"
-            )
-        },
+    citations = (
+        extraire_citations(resultat.chunks_enfants) if resultat.chunks_enfants else []
+    )
+    sources: list[dict] = [c.model_dump() for c in citations]
+    contexte = (
+        assembler_contexte(resultat.chunks_parents, resultat.chunks_enfants)
+        if resultat.chunks_enfants
+        else ""
     )
 
-    citations = extraire_citations(resultat.chunks_enfants)
-    sources = [c.model_dump() for c in citations]
-    contexte = assembler_contexte(resultat.chunks_parents, resultat.chunks_enfants)
+    # ── Branche web (CDC 10) — UNIQUEMENT si toggle utilisateur ──
+    web_results: list[dict] = []
+    if requete.web:
+        yield sse("status", {"label": "Recherche sur le web…"})
+        web_results = web_search(requete.question)
+        if web_results:
+            web_ctx = format_web_context(web_results)
+            contexte = f"{contexte}\n\n{web_ctx}" if contexte else web_ctx
+            contexte = _CONTEXTE_WEB_PRIORITY + contexte
+            for r in web_results:
+                sources.append(
+                    {
+                        "type": "web",
+                        "chunk_id": None,
+                        "document": r["title"],
+                        "section": "Web",
+                        "page": None,
+                        "url": r["url"],
+                        "extrait": (r["content"] or "")[:300],
+                    }
+                )
 
-    # ── Branche génération .docx (CDC 9) ─────────────────────────
+    # Aucun contexte interne NI web → refus (pas d'invention)
+    if not resultat.chunks_enfants and not web_results:
+        yield from _refus(debut)
+        return
+
+    if resultat.chunks_enfants:
+        yield sse(
+            "status",
+            {
+                "label": (
+                    f"Sélection des {len(resultat.chunks_enfants)} "
+                    f"passages les plus pertinents…"
+                )
+            },
+        )
+
+    # ── Branche génération .docx (CDC 9) — corpus interne uniquement ──
     if detect_document_intent(requete.question):
-        # Pas de génération si le retrieval n'a pas le vrai contenu demandé
-        if not _contenu_couvre_la_demande(requete.question, resultat.chunks_enfants):
-            yield sse("sources", [])
-            yield sse("token", {"texte": MESSAGE_AUCUN_ACCES})
-            yield sse(
-                "done",
-                {
-                    "latence_ms": int((time.perf_counter() - debut) * 1000),
-                    "a_repondu": False,
-                    "nb_sources": 0,
-                },
-            )
+        if not resultat.chunks_enfants or not _contenu_couvre_la_demande(
+            requete.question, resultat.chunks_enfants
+        ):
+            yield from _refus(debut)
             return
 
-        yield sse("status", {"label": "Rédaction du document…"})
-        yield sse("sources", sources)
+        contexte_doc = assembler_contexte(
+            resultat.chunks_parents, resultat.chunks_enfants
+        )
+        sources_doc = [c.model_dump() for c in citations]
 
-        payload = generate_document_payload(requete.question, contexte)
-        content = build_document(payload, sources)
+        yield sse("status", {"label": "Rédaction du document…"})
+        yield sse("sources", sources_doc)
+
+        payload = generate_document_payload(requete.question, contexte_doc)
+        content = build_document(payload, sources_doc)
         filename = _slugify(payload.get("titre") or "document") + ".docx"
         file_id = save_file(content, filename)
 
@@ -157,13 +208,17 @@ def flux_evenements(requete: RequeteChat) -> Iterator[str]:
         )
         return
 
-    # ── Chat normal (CDC 4) ──────────────────────────────────────
+    # ── Chat normal (CDC 4 + 10) ──────────────────────────────────
     yield sse("sources", sources)
     yield sse("status", {"label": "Rédaction de la réponse…"})
 
+    question_llm = requete.question
+    if web_results:
+        question_llm = requete.question + _NOTE_WEB
+
     reponse_complete: list[str] = []
     for texte in generer_streaming(
-        question=requete.question,
+        question=question_llm,
         contexte=contexte,
         modele=settings.llm_model,
         temperature=settings.temperature,
@@ -179,14 +234,14 @@ def flux_evenements(requete: RequeteChat) -> Iterator[str]:
         {
             "latence_ms": int((time.perf_counter() - debut) * 1000),
             "a_repondu": a_repondu,
-            "nb_sources": len(citations),
+            "nb_sources": len(sources),
         },
     )
 
 
 @router.post("/api/chat")
 async def chat(requete: RequeteChat) -> StreamingResponse:
-    """Endpoint SSE — chat + génération de documents."""
+    """Endpoint SSE — chat + génération de documents + web optionnel."""
     return StreamingResponse(
         flux_evenements(requete),
         media_type="text/event-stream; charset=utf-8",

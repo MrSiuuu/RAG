@@ -19,7 +19,7 @@ export function useRagChat(userGroups: string[]) {
   const abortRef = useRef<AbortController | null>(null);
 
   const send = useCallback(
-    async (question: string) => {
+    async (question: string, web: boolean = false) => {
       const q = question.trim();
       if (!q || isStreaming) return;
 
@@ -52,7 +52,11 @@ export function useRagChat(userGroups: string[]) {
         const res = await fetch(`${API_URL}/api/chat`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question: q, user_groups: userGroups }),
+          body: JSON.stringify({
+            question: q,
+            user_groups: userGroups,
+            web: Boolean(web),
+          }),
           signal: controller.signal,
         });
 
