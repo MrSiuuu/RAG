@@ -1,0 +1,40 @@
+[project]
+name = "rag-dyneff"
+version = "0.1.0"
+description = "POC RAG RH — Dyneff"
+requires-python = ">=3.12,<3.13"
+
+dependencies = [
+    # API
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "python-dotenv>=1.0",
+
+    # Base de données
+    "psycopg[binary]>=3.2",
+    "sqlalchemy>=2.0",
+    "pgvector>=0.3",
+
+    # IA — une seule clé
+    "openai>=1.60",
+    "tiktoken>=0.8",
+
+    # Ingestion (CDC 2)
+    "pymupdf4llm>=0.0.17",
+
+    # Génération de fichiers (CDC 9)
+    "python-docx>=1.1",
+
+    # Recherche web (CDC 10)
+    "httpx>=0.27",
+
+    # Auth (CDC 6)
+    "bcrypt>=4.2",
+    "pyjwt>=2.9",
+]
+
+# On n'installe QUE les dépendances, jamais le projet lui-même comme package.
+[tool.uv]
+package = false

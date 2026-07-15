@@ -1,0 +1,45 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: rag-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rag
+      POSTGRES_PASSWORD: rag
+      POSTGRES_DB: ragdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # ⚠️ Ce fichier n'est exécuté QU'AU PREMIER démarrage (volume vide).
+      #    Après toute modification du schéma : docker compose down -v
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rag -d ragdb"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  api:
+    build: .
+    container_name: rag-api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # ⚠️ Écrase le DATABASE_URL du .env.
+      #    Dans le conteneur, la base s'appelle "db" (le nom du service),
+      #    pas "localhost" (qui désignerait le conteneur api lui-même).
+      #    Docker Compose donne priorité à "environment" sur "env_file".
+      DATABASE_URL: postgresql+psycopg://rag:rag@db:5432/ragdb
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/srv/app
+      - ./corpus:/srv/corpus
+    depends_on:
+      db:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  pgdata:

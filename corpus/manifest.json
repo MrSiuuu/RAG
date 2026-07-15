@@ -1,0 +1,135 @@
+{
+  "version": 1,
+  "genere_le": "2026-07-14",
+  "description": "Corpus de test du POC RAG RH. Corpus PUBLIC et SYNTHETIQUE uniquement. Aucun document reel de l'entreprise.",
+
+  "groupes": {
+    "grp-tous": "Tous les collaborateurs",
+    "grp-rh": "Service Ressources Humaines - acces aux documents confidentiels",
+    "grp-admin": "Administration technique"
+  },
+
+  "documents": [
+    {
+      "chemin": "corpus/convention-collective-petrole-1388.pdf",
+      "titre": "Convention collective nationale de l'industrie du petrole (IDCC 1388)",
+      "type": "pdf",
+      "source": "public",
+      "service": "rh",
+      "sensibilite": "public",
+      "allowed_groups": ["grp-tous"],
+      "url": "https://www.legifrance.gouv.fr/conv_coll/id/KALICONT000005635267",
+      "description": "Texte de base du 3 septembre 1985, etendu par arrete du 31 juillet 1986. Brochure JO 3001."
+    },
+    {
+      "chemin": "corpus/procedure-teletravail.md",
+      "titre": "Procedure Teletravail",
+      "type": "md",
+      "source": "synthetique",
+      "service": "rh",
+      "sensibilite": "interne",
+      "allowed_groups": ["grp-tous"],
+      "description": "Plafond de 2 jours par semaine, motifs de refus, voie de recours."
+    },
+    {
+      "chemin": "corpus/procedure-conges-payes.md",
+      "titre": "Procedure Conges payes et RTT",
+      "type": "md",
+      "source": "synthetique",
+      "service": "rh",
+      "sensibilite": "interne",
+      "allowed_groups": ["grp-tous"],
+      "description": "25 jours ouvres, RTT, report, fractionnement, conges exceptionnels."
+    },
+    {
+      "chemin": "corpus/procedure-notes-de-frais.md",
+      "titre": "Procedure Notes de frais et deplacements professionnels",
+      "type": "md",
+      "source": "synthetique",
+      "service": "rh",
+      "sensibilite": "interne",
+      "allowed_groups": ["grp-tous"],
+      "description": "Plafonds, justificatifs, delais de soumission, validation."
+    },
+    {
+      "chemin": "corpus/procedure-arret-maladie.md",
+      "titre": "Procedure Arret maladie et absence pour raison de sante",
+      "type": "md",
+      "source": "synthetique",
+      "service": "rh",
+      "sensibilite": "interne",
+      "allowed_groups": ["grp-tous"],
+      "description": "Delais de declaration, bareme de maintien de salaire, visite de reprise."
+    },
+    {
+      "chemin": "corpus/procedure-onboarding.md",
+      "titre": "Parcours d'integration d'un nouveau collaborateur",
+      "type": "md",
+      "source": "synthetique",
+      "service": "rh",
+      "sensibilite": "interne",
+      "allowed_groups": ["grp-tous"],
+      "description": "J-7, J0, J+7, J+30, J+90. Periode d'essai."
+    },
+    {
+      "chemin": "corpus/guide-mutuelle.md",
+      "titre": "Guide de la complementaire sante (mutuelle d'entreprise)",
+      "type": "md",
+      "source": "synthetique",
+      "service": "rh",
+      "sensibilite": "interne",
+      "allowed_groups": ["grp-tous"],
+      "description": "Trois regimes Base / Confort / Famille+. Tableau comparatif complet."
+    },
+    {
+      "chemin": "corpus/procedure-entretien-annuel.md",
+      "titre": "Procedure Entretien annuel d'evaluation",
+      "type": "md",
+      "source": "synthetique",
+      "service": "rh",
+      "sensibilite": "interne",
+      "allowed_groups": ["grp-tous"],
+      "description": "Campagne fevrier-mars, compte rendu, contestation, entretien professionnel."
+    },
+    {
+      "chemin": "corpus/procedure-mobilite-interne.md",
+      "titre": "Procedure Mobilite interne",
+      "type": "md",
+      "source": "synthetique",
+      "service": "rh",
+      "sensibilite": "interne",
+      "allowed_groups": ["grp-tous"],
+      "description": "18 mois d'anciennete, bourse a l'emploi, prime de mobilite. France metropolitaine uniquement."
+    },
+    {
+      "chemin": "corpus/CONFIDENTIEL-grille-remuneration-2026.md",
+      "titre": "Grille de remuneration 2026",
+      "type": "md",
+      "source": "fictif",
+      "service": "rh",
+      "sensibilite": "confidentiel",
+      "allowed_groups": ["grp-rh"],
+      "description": "DOCUMENT FICTIF. 8 niveaux, part variable, primes. Sert a demontrer le filtrage par droits."
+    },
+    {
+      "chemin": "corpus/CONFIDENTIEL-procedure-disciplinaire.md",
+      "titre": "Procedure disciplinaire",
+      "type": "md",
+      "source": "fictif",
+      "service": "rh",
+      "sensibilite": "confidentiel",
+      "allowed_groups": ["grp-rh"],
+      "description": "DOCUMENT FICTIF. Echelle des sanctions, procedure, bareme par faute. Sert a demontrer le filtrage par droits."
+    }
+  ],
+
+  "trous_connus": [
+    "Conge proche aidant",
+    "Mobilite internationale et expatriation",
+    "Reforme du conge paternite 2026",
+    "Teletravail depuis l'etranger",
+    "Compte epargne temps (CET)",
+    "Conge sabbatique",
+    "Participation et interessement"
+  ]
+}
