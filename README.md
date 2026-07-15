@@ -18,6 +18,17 @@ curl localhost:8000/health
 # → {"status":"ok","db":"connected"}
 ```
 
+## Front (CDC 8)
+
+```bash
+# Terminal 1 — API déjà lancée via docker compose
+# Terminal 2 —
+cd web
+npm install
+npm run dev
+# → http://localhost:3000
+```
+
 ## Réinitialiser la base
 
 `db/init.sql` n'est exécuté qu'à la **création du volume**.

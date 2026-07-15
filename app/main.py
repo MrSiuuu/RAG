@@ -4,6 +4,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
+from app.api.chat import router as chat_router
+from app.api.files import router as files_router
 from app.api.search import router as search_router
 from app.config import settings
 from app.db import db_est_joignable, engine
@@ -15,6 +17,8 @@ app = FastAPI(
 )
 
 app.include_router(search_router)
+app.include_router(chat_router)
+app.include_router(files_router)
 
 # Le front Next.js arrivera sur le port 3000 (CDC 8).
 app.add_middleware(
