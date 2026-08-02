@@ -14,7 +14,6 @@ router = APIRouter()
 
 class RequeteRecherche(BaseModel):
     question: str = Field(..., min_length=1)
-    user_groups: list[str]
 
 
 class ChunkResultat(BaseModel):
@@ -41,12 +40,7 @@ async def chercher(requete: RequeteRecherche) -> ReponseRecherche:
     """Endpoint de DEBUG — pas destiné au front final."""
     try:
         with psycopg.connect(_url_psycopg()) as conn:
-            resultat = rechercher(
-                conn,
-                requete.question,
-                requete.user_groups,
-                settings,
-            )
+            resultat = rechercher(conn, requete.question, settings)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

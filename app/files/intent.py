@@ -1,9 +1,12 @@
-"""Détection d'intention de rédaction de document (POC, règles regex)."""
+"""Détection d'intention de rédaction de document (regex + slash /doc)."""
+
+from __future__ import annotations
 
 import re
 
 _DOC_TRIGGERS = [
     r"\brédige",
+    r"\bredige",
     r"\brediger",
     r"\brédigez",
     r"\bgénère",
@@ -26,6 +29,19 @@ _DOC_TRIGGERS = [
 _DOC_RE = re.compile("|".join(_DOC_TRIGGERS), re.IGNORECASE)
 
 
+def preparer_intention_document(message: str) -> tuple[bool, str]:
+    """Retourne (force_doc, message_sans_slash).
+
+    Si le message commence par `/doc`, force l'intention document et retire
+    le préfixe avant le reste du traitement.
+    """
+    texte = (message or "").strip()
+    if texte.lower().startswith("/doc"):
+        reste = texte[4:].strip()
+        return True, reste
+    return False, texte
+
+
 def detect_document_intent(question: str) -> bool:
-    """Détection d'intention par règles. Évolutive vers un classifieur / /doc."""
+    """True si intention de rédaction (regex). `/doc` est géré en amont."""
     return bool(_DOC_RE.search(question or ""))

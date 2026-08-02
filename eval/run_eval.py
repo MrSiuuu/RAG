@@ -154,7 +154,6 @@ def main() -> None:
             resultat = rechercher(
                 conn,
                 question=it["question"],
-                groupes_utilisateur=ALL_GROUPS,
                 settings=settings,
             )
             enfants = resultat.chunks_enfants

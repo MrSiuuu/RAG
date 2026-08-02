@@ -1,26 +1,46 @@
 """API RAG Dyneff — point d'entrée FastAPI."""
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
+from app.api.admin import router as admin_router
+from app.api.auth import router as auth_router
 from app.api.chat import router as chat_router
+from app.api.conversations import router as conversations_router
+from app.api.demandes import router as demandes_router
 from app.api.files import router as files_router
 from app.api.search import router as search_router
 from app.config import settings
 from app.db import db_est_joignable, engine
+from app.db_migrate import assurer_tables_supplementaires
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    # Tables supplémentaires (demandes) + user CSE démo — sans toucher init.sql.
+    assurer_tables_supplementaires()
+    yield
+
 
 app = FastAPI(
     title="RAG Dyneff — API",
     description="POC RAG pour le service RH. Deux portes, un seul cerveau.",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
+app.include_router(auth_router)
 app.include_router(search_router)
 app.include_router(chat_router)
 app.include_router(files_router)
+app.include_router(admin_router)
+app.include_router(demandes_router)
+app.include_router(conversations_router)
 
-# Le front Next.js arrivera sur le port 3000 (CDC 8).
+# Le front Next.js arrive sur le port 3000 (CDC 8).
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
@@ -44,13 +64,7 @@ def health() -> dict:
 
 @app.get("/health/db")
 def health_db() -> dict:
-    """Endpoint de debug : prouve que pgvector et le schéma sont en place.
-
-    Le champ "coherence_dim" est un garde-fou contre le piège n°1 du projet.
-    Si la dimension déclarée en base et celle de la config divergent, le
-    retrieval renverra du bruit pur SANS jamais planter. On veut le savoir
-    maintenant, pas dans trois heures.
-    """
+    """Endpoint de debug : prouve que pgvector et le schéma sont en place."""
     with engine.connect() as conn:
         version_pgvector = conn.execute(
             text("SELECT extversion FROM pg_extension WHERE extname = 'vector'")
@@ -66,8 +80,6 @@ def health_db() -> dict:
             )
         ]
 
-        # Pour une colonne pgvector, atttypmod contient directement le
-        # nombre de dimensions déclaré à la création.
         dim_en_base = conn.execute(
             text(
                 "SELECT atttypmod FROM pg_attribute "

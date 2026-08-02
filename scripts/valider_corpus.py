@@ -29,7 +29,7 @@ CORPUS_DIR = RACINE / "corpus"
 TYPES_VALIDES = {"pdf", "md"}
 SOURCES_VALIDES = {"public", "synthetique", "fictif"}
 SENSIBILITES_VALIDES = {"public", "interne", "confidentiel"}
-GROUPES_VALIDES = {"grp-tous", "grp-rh", "grp-admin"}
+GROUPES_VALIDES = {"grp-tous", "grp-rh", "grp-cse", "grp-hse", "grp-juridique", "grp-admin"}
 
 MOTS_MINIMUM = 900
 TITRES_H2_MIN = 4
@@ -83,11 +83,10 @@ def estimer_chunks(texte: str) -> int:
 
 
 def controle_securite(documents: list, erreurs: list) -> None:
-    """Le controle qui compte : aucun document confidentiel ne doit
-    etre accessible a grp-tous.
+    """Aucun document confidentiel ne doit être accessible à grp-tous.
 
-    Si ce controle passe, la demo ACL du CDC 6 fonctionnera.
-    S'il echoue, la grille des salaires est publique. Le projet meurt.
+    Depuis le CDC 15, le corpus de démo n'embarque plus de documents
+    confidentiels (0 attendu). Le garde-fou reste actif si on en réintroduit.
     """
     confidentiels = [d for d in documents if d.get("sensibilite") == "confidentiel"]
 
@@ -97,16 +96,11 @@ def controle_securite(documents: list, erreurs: list) -> None:
             erreurs.append(
                 f"FATAL - {doc['chemin']} est CONFIDENTIEL mais accessible a grp-tous !"
             )
-        if groupes != ["grp-rh"]:
+        if "grp-tous" in groupes or not groupes:
             erreurs.append(
-                f"{doc['chemin']} : un document confidentiel doit etre restreint "
-                f"a ['grp-rh'], trouve {groupes}"
+                f"{doc['chemin']} : un document confidentiel ne doit pas etre "
+                f"ouvert a grp-tous, trouve {groupes}"
             )
-
-    if len(confidentiels) != 2:
-        erreurs.append(
-            f"Attendu : 2 documents confidentiels. Trouve : {len(confidentiels)}"
-        )
 
 
 def fichiers_orphelins(documents: list) -> list[str]:
@@ -264,7 +258,7 @@ def afficher_rapport(
     print("  " + "-" * 93)
     print(f"  {len(documents)} documents declares")
     print(f"  {nb_public} accessibles a tous (grp-tous)")
-    print(f"  {nb_conf} CONFIDENTIELS (grp-rh uniquement)")
+    print(f"  {nb_conf} documents confidentiels")
     print(f"  ~{total_chunks} chunks estimes")
     print(f"  {nb_trous} trous connus declares")
     print()
@@ -276,8 +270,8 @@ def afficher_rapport(
         print("  [ECHEC] Document confidentiel accessible a grp-tous !")
     else:
         print("  [OK] Aucun document confidentiel accessible a grp-tous")
-        if nb_conf == 2:
-            print("  [OK] Les 2 documents confidentiels sont bien restreints a grp-rh")
+        if nb_conf == 0:
+            print("  [OK] Aucun document confidentiel dans le corpus (CDC 15)")
 
     if avertissements:
         print()

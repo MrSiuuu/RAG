@@ -37,6 +37,7 @@ services:
       - ./app:/srv/app
       - ./corpus:/srv/corpus
       - ./eval:/srv/eval
+      - ./scripts:/srv/scripts
     depends_on:
       db:
         condition: service_healthy

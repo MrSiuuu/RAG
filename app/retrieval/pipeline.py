@@ -9,7 +9,6 @@ import psycopg.rows
 
 from app.config import Settings
 from app.ingest.embed import vectoriser
-from app.retrieval.acl import valider_groupes
 from app.retrieval.fulltext import recherche_plein_texte
 from app.retrieval.fusion import rrf
 from app.retrieval.rerank import reranker
@@ -44,13 +43,13 @@ def charger_parents(conn, chunks_enfants: list[dict]) -> list[dict]:
 def rechercher(
     conn,
     question: str,
-    groupes_utilisateur: list[str],
     settings: Settings,
 ) -> ResultatRecherche:
-    """Pipeline complet : ACL → vectoriel + full-text → RRF → rerank → parents."""
-    debut = time.perf_counter()
+    """Pipeline : vectoriel + full-text → RRF → rerank → parents.
 
-    groupes = valider_groupes(groupes_utilisateur)
+    Corpus ouvert : aucun filtre de groupes / service.
+    """
+    debut = time.perf_counter()
     question = question.strip()
 
     vecteur = vectoriser(
@@ -60,8 +59,8 @@ def rechercher(
         taille_lot=1,
     )[0]
 
-    res_vecteur = recherche_vectorielle(conn, vecteur, groupes, settings.top_k)
-    res_texte = recherche_plein_texte(conn, question, groupes, settings.top_k)
+    res_vecteur = recherche_vectorielle(conn, vecteur, settings.top_k)
+    res_texte = recherche_plein_texte(conn, question, settings.top_k)
 
     candidats = rrf(res_vecteur, res_texte)[: settings.top_k]
     nb_candidats = len(candidats)

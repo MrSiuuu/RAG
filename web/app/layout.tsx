@@ -1,22 +1,17 @@
 import type { Metadata } from "next";
-import { Source_Sans_3, Syne } from "next/font/google";
+import { Inter } from "next/font/google";
+import { AuthProvider } from "@/lib/auth";
 import "./globals.css";
 
-const sourceSans = Source_Sans_3({
+const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
 });
 
-const syne = Syne({
-  subsets: ["latin"],
-  variable: "--font-display",
-  display: "swap",
-});
-
 export const metadata: Metadata = {
-  title: "Dyneff — Assistant RH",
-  description: "RAG RH — réponses sourcées, filtrage par droits",
+  title: "Dyneff — Assistant Dyneff",
+  description: "Assistant interne — réponses sourcées sur les procédures",
 };
 
 export default function RootLayout({
@@ -25,8 +20,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" className={`${sourceSans.variable} ${syne.variable} h-full`}>
-      <body className="min-h-full font-sans antialiased">{children}</body>
+    <html lang="fr" className={`${inter.variable} h-full`}>
+      <body className="min-h-full font-sans antialiased">
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

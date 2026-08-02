@@ -129,7 +129,7 @@ def build_document(payload: dict, sources: list[dict]) -> bytes:
             doc.add_paragraph().add_run(f"[{i}] {libelle}").font.size = Pt(9)
 
     fp = doc.sections[0].footer.paragraphs[0]
-    fp.text = "Document généré par l'Assistant RH Dyneff — à relire avant signature."
+    fp.text = "Document généré par l'Assistant Dyneff — à relire avant signature."
     for run in fp.runs:
         run.font.size = Pt(8)
         run.font.color.rgb = RGBColor(0x88, 0x90, 0x96)

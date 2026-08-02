@@ -8,31 +8,23 @@ import psycopg.rows
 def recherche_plein_texte(
     conn,
     question: str,
-    groupes_utilisateur: list[str],
     top_k: int,
 ) -> list[dict]:
-    """Cherche par mots exacts avec le dictionnaire 'french' de Postgres."""
+    """Cherche par mots exacts dans tout le corpus (chunks enfants)."""
     with conn.cursor(row_factory=psycopg.rows.dict_row) as cur:
         cur.execute(
             """
             SELECT
-                c.id,
-                c.document_id,
-                c.breadcrumb,
-                c.contenu,
-                c.contenu_indexe,
-                c.parent_id,
-                c.page,
-                c.allowed_groups,
+                c.id, c.document_id, c.breadcrumb, c.contenu,
+                c.contenu_indexe, c.parent_id, c.page, c.allowed_groups,
                 ts_rank(c.tsv, plainto_tsquery('french', %s)) AS score_texte
             FROM chunks c
             WHERE c.type = 'child'
-              AND c.allowed_groups && %s
               AND c.tsv @@ plainto_tsquery('french', %s)
             ORDER BY score_texte DESC
             LIMIT %s
             """,
-            (question, groupes_utilisateur, question, top_k),
+            (question, question, top_k),
         )
         lignes = cur.fetchall()
 

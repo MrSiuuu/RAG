@@ -29,19 +29,30 @@ def generer_streaming(
     contexte: str,
     modele: str,
     temperature: float,
+    historique: list[dict] | None = None,
 ) -> Iterator[str]:
     """Génère la réponse en STREAMING — yield immédiat de chaque morceau."""
     client = OpenAI()
+
+    messages: list[dict] = [
+        {"role": "system", "content": PROMPT_SYSTEME.format(contexte=contexte)},
+    ]
+    # Mémoire légère : derniers tours avant la question courante
+    for tour in (historique or [])[-6:]:
+        role = tour.get("role") or "user"
+        if role not in {"user", "assistant"}:
+            continue
+        contenu = tour.get("contenu") or tour.get("content") or ""
+        if contenu:
+            messages.append({"role": role, "content": contenu})
+    messages.append({"role": "user", "content": question})
 
     flux = _appel_avec_temperature(
         client,
         model=modele,
         temperature=temperature,
         stream=True,
-        messages=[
-            {"role": "system", "content": PROMPT_SYSTEME.format(contexte=contexte)},
-            {"role": "user", "content": question},
-        ],
+        messages=messages,
     )
 
     for morceau in flux:

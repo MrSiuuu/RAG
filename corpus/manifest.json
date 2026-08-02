@@ -1,11 +1,12 @@
 {
   "version": 1,
-  "genere_le": "2026-07-14",
-  "description": "Corpus de test du POC RAG RH. Corpus PUBLIC et SYNTHETIQUE uniquement. Aucun document reel de l'entreprise.",
+  "genere_le": "2026-07-17",
+  "description": "Corpus de test du POC Assistant Dyneff. Multi-service (RH + CSE). Corpus PUBLIC et SYNTHETIQUE. Aucun document reel de l'entreprise.",
 
   "groupes": {
-    "grp-tous": "Tous les collaborateurs",
-    "grp-rh": "Service Ressources Humaines - acces aux documents confidentiels",
+    "grp-tous": "Tous les collaborateurs (etiquette historique, plus de filtre ACL)",
+    "grp-rh": "Etiquette service RH (ingestion)",
+    "grp-cse": "Etiquette service CSE (ingestion)",
     "grp-admin": "Administration technique"
   },
 
@@ -102,24 +103,34 @@
       "description": "18 mois d'anciennete, bourse a l'emploi, prime de mobilite. France metropolitaine uniquement."
     },
     {
-      "chemin": "corpus/CONFIDENTIEL-grille-remuneration-2026.md",
-      "titre": "Grille de remuneration 2026",
+      "chemin": "corpus/cse-budget-activites-2026.md",
+      "titre": "Budget et activites sociales du CSE 2026",
       "type": "md",
-      "source": "fictif",
-      "service": "rh",
-      "sensibilite": "confidentiel",
-      "allowed_groups": ["grp-rh"],
-      "description": "DOCUMENT FICTIF. 8 niveaux, part variable, primes. Sert a demontrer le filtrage par droits."
+      "source": "synthetique",
+      "service": "cse",
+      "sensibilite": "interne",
+      "allowed_groups": ["grp-tous"],
+      "description": "Enveloppe ASC 185 000 euros, repartition, plafonds individuels, campagnes."
     },
     {
-      "chemin": "corpus/CONFIDENTIEL-procedure-disciplinaire.md",
-      "titre": "Procedure disciplinaire",
+      "chemin": "corpus/cse-reunions-delegation.md",
+      "titre": "Reunions du CSE et heures de delegation",
       "type": "md",
-      "source": "fictif",
-      "service": "rh",
-      "sensibilite": "confidentiel",
-      "allowed_groups": ["grp-rh"],
-      "description": "DOCUMENT FICTIF. Echelle des sanctions, procedure, bareme par faute. Sert a demontrer le filtrage par droits."
+      "source": "synthetique",
+      "service": "cse",
+      "sensibilite": "interne",
+      "allowed_groups": ["grp-tous"],
+      "description": "Calendrier des reunions, credit d'heures, formation des elus, PV."
+    },
+    {
+      "chemin": "corpus/cse-avantages-offres.md",
+      "titre": "Avantages et offres du CSE Dyneff",
+      "type": "md",
+      "source": "synthetique",
+      "service": "cse",
+      "sensibilite": "interne",
+      "allowed_groups": ["grp-tous"],
+      "description": "Billetterie, sport, rentrée scolaire, cheques-cadeaux, sejours."
     }
   ],
 

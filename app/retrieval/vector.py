@@ -12,36 +12,25 @@ def vers_litteral_vecteur(v: list[float]) -> str:
 def recherche_vectorielle(
     conn,
     vecteur_question: list[float],
-    groupes_utilisateur: list[str],
     top_k: int,
 ) -> list[dict]:
-    """Cherche les top_k chunks enfants les plus proches.
-
-    Le filtre ACL est dans le WHERE, AVANT le ORDER BY — jamais après.
-    """
+    """Cherche les top_k chunks enfants les plus proches (corpus entier)."""
     vecteur_str = vers_litteral_vecteur(vecteur_question)
 
     with conn.cursor(row_factory=psycopg.rows.dict_row) as cur:
         cur.execute(
             """
             SELECT
-                c.id,
-                c.document_id,
-                c.breadcrumb,
-                c.contenu,
-                c.contenu_indexe,
-                c.parent_id,
-                c.page,
-                c.allowed_groups,
+                c.id, c.document_id, c.breadcrumb, c.contenu,
+                c.contenu_indexe, c.parent_id, c.page, c.allowed_groups,
                 (c.embedding <=> %s::vector) AS score_vecteur
             FROM chunks c
             WHERE c.type = 'child'
               AND c.embedding IS NOT NULL
-              AND c.allowed_groups && %s
             ORDER BY c.embedding <=> %s::vector
             LIMIT %s
             """,
-            (vecteur_str, groupes_utilisateur, vecteur_str, top_k),
+            (vecteur_str, vecteur_str, top_k),
         )
         lignes = cur.fetchall()
 
